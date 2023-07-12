@@ -1,0 +1,22 @@
+with session_counts as 
+(select date(created_at) as date, count(distinct user_id) as sessions
+from my_table
+where event_name = 'session' and created_at <= 
+(select min(created_at) + interval '14 days'
+from my_table
+where event_name = 'install')
+group by  date ), 
+
+install_counts as 
+(select distinct date(created_at) as day,
+count(user_id) over (order by date(created_at)) as total_installs
+from my_table
+where event_name = 'install' and created_at <= 
+(select min(created_at) + interval '14 days'
+from my_table
+where event_name = 'install' ) )
+
+select s.date, ROUND((s.sessions::numeric / i.total_installs), 2) as session_to_install_ratio
+from session_counts s
+join install_counts i on s.date = i.day
+order by s.date;
