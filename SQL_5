@@ -1,0 +1,34 @@
+with all_payments_for_user as (
+select date(created_at) as date,
+row_number() over (partition by user_id order by date(created_at)) as payments_for_user
+from my_table
+where event_name = 'payment'), 
+
+all_uniq_payer as (
+select date, payments_for_user
+from all_payments_for_user u
+where payments_for_user = 1), 
+
+unique_payers_by_date as (
+select distinct (d.date),
+sum(payments_for_user) over (order by d.date) as unique_payers
+from (select distinct date(created_at) from my_table) d
+left join all_uniq_payer u on u.date = d.date
+where d.date <= (select min(created_at) + interval '14 days'
+from my_table
+where event_name = 'install')), 
+
+total_installs_by_date as (
+select distinct (DATE(created_at)) as day,
+count(user_id) over (order by date(created_at)) as total_installs
+from my_table
+where event_name = 'install' and created_at < (
+select min(created_at) + interval'14 days'
+from my_table
+where event_name = 'install'))
+
+select unique_payers_by_date.date,
+round (unique_payers_by_date.unique_payers / total_installs_by_date.total_installs *100, 2) as unique_payers_per_install
+from unique_payers_by_date
+join total_installs_by_date on unique_payers_by_date.date = total_installs_by_date.day
+order by date;
