@@ -1,0 +1,8 @@
+select distinct(date(created_at)) AS day,
+sum(revenue) over (order by date(created_at)) AS cumulative_revenue
+from my_table
+where event_name = 'payment'
+and created_at < (select min(created_at) + interval '14 days' 
+from my_table 
+where event_name = 'install')
+order by day
