@@ -1,0 +1,19 @@
+with all_payments_for_user as ( 
+select date(created_at) as date, 
+row_number() over (partition by user_id order by date(created_at)) as payments_for_user
+from my_table
+where event_name ='payment'),
+	
+all_uniq_payer AS ( 
+select date, payments_for_user
+FROM all_payments_for_user u
+where payments_for_user=1)
+  
+select distinct(d.date), 
+sum(payments_for_user) over (order by d.date) as unique_payers
+from (select distinct date(created_at) from my_table) d
+left join all_uniq_payer u on u.date=d.date
+where d.date <= (select min(created_at) + interval '13 days' 
+from my_table 
+where event_name = 'install')
+order by date
