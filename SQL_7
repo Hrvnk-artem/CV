@@ -1,0 +1,8 @@
+select distinct(date(created_at)),
+round(sum(case when event_name='payment' then revenue end) over (order by date(created_at)) /
+count(case when event_name='install' then user_id end) over (order by date(created_at))::numeric, 3) as ltv
+from my_table
+where created_at < (select min(created_at) + interval '14 days' 
+from my_table 
+where event_name = 'install')
+order by 1
