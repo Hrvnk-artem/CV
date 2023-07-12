@@ -1,0 +1,8 @@
+select distinct(date(created_at)) AS day,
+count(user_id) over (order by date(created_at)) AS total_installs
+from my_table
+where event_name = 'install'
+and created_at < (select min(created_at) + interval '14 days' 
+from my_table 
+where event_name = 'install')
+order by day
