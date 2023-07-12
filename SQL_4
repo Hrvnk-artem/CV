@@ -1,0 +1,8 @@
+select date(created_at) as date, count(distinct(user_id)) as sessions
+from my_table
+where event_name = 'session' and created_at <= 
+(select min(created_at) + interval'14 days' 
+from my_table
+where event_name= 'install')
+group by date
+order by date
